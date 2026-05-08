@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Utilitários - Web App</title>
-    
-    <!-- SCRIPT DO ADSENSE AUTOMÁTICO -->
+    <title>DL Utils</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">    
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4339228294306314"
      crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         :root {
@@ -98,7 +101,9 @@
         /* Área de Conteúdo Principal */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .main-content { flex: 1; overflow-y: auto; padding-bottom: 30px; }
-        .ad-banner { background: #e9ecef; color: #adb5bd; text-align: center; padding: 20px; margin: 20px; border: 2px dashed #ced4da; border-radius: 8px; min-height: 90px; display: flex; align-items: center; justify-content: center; }
+        
+        /* Ajuste do banner de anúncio */
+        .ad-banner { background: #e9ecef; text-align: center; padding: 10px; margin: 20px; border-radius: 8px; min-height: 90px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
         .tab-content { display: none; padding: 20px; animation: fadeIn 0.4s ease-in-out; }
         .tab-content.active { display: block; }
@@ -113,11 +118,12 @@
 
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
-        input[type="number"], input[type="text"], input[type="date"], select, textarea {
+        input[type="number"], input[type="text"], input[type="date"], select, textarea, input[type="file"] {
             width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; font-family: inherit;
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
         textarea { resize: vertical; min-height: 100px; }
+        input[type="file"] { padding: 8px; font-size: 14px; background: #f8f9fa; cursor: pointer; }
 
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         button.action-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; margin-top: 10px; }
@@ -142,7 +148,6 @@
 </head>
 <body>
 
-    <!-- Nav Mobile -->
     <div class="mobile-nav">
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <h2>🛠️ DL Utils </h2>
@@ -150,16 +155,22 @@
 
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!-- Menu Lateral Sanfonado -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>🛠️ DL Utils </h2>
             <button class="close-sidebar" onclick="toggleSidebar()">&times;</button>
         </div>
         
-        <button class="category-btn open" onclick="toggleAccordion(this)">🧮 Finanças e Mercado <span class="arrow">▼</span></button>
+        <button class="category-btn open" onclick="toggleAccordion(this)">📂 Arquivos e Imagens <span class="arrow">▼</span></button>
         <div class="category-content open">
-            <button class="tab-btn active" onclick="openTab(event, 'calcMercado')">🛒 Compensa Mais?</button>
+            <button class="tab-btn active" onclick="openTab(event, 'juntarPdf')">📄 Juntar PDFs</button>
+            <button class="tab-btn" onclick="openTab(event, 'renomearLote')">📝 Renomear em Lote</button>
+            <button class="tab-btn" onclick="openTab(event, 'converterImagem')">🖼️ Conversor de Imagens</button>
+        </div>
+
+        <button class="category-btn" onclick="toggleAccordion(this)">🧮 Finanças e Mercado <span class="arrow">▼</span></button>
+        <div class="category-content">
+            <button class="tab-btn" onclick="openTab(event, 'calcMercado')">🛒 Compensa Mais?</button>
             <button class="tab-btn" onclick="openTab(event, 'calcPorcentagem')">📉 Porcentagem</button>
             <button class="tab-btn" onclick="openTab(event, 'calcDesconto')">🏷️ Calc. de Desconto</button>
             <button class="tab-btn" onclick="openTab(event, 'dividirConta')">🍕 Dividir Conta</button>
@@ -206,8 +217,58 @@
         </div>
     </div>
 
-            <!-- Categoria 1: Finanças -->
-            <div id="calcMercado" class="tab-content active">
+<div class="main-wrapper">
+        <div class="main-content">
+            
+            <div class="ad-banner">
+                <ins class="adsbygoogle"
+                     style="display:block; width:100%;"
+                     data-ad-client="ca-pub-4339228294306314"
+                     data-ad-slot="5606367275"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <div id="juntarPdf" class="tab-content active">
+                <div class="tool-card">
+                    <h3>Juntar Arquivos PDF</h3>
+                    <p style="font-size:13px; color:#666;">O processamento é feito localmente. Seus arquivos não são enviados para nenhum servidor.</p>
+                    <div class="form-group"><label>Selecione 2 ou mais PDFs:</label><input type="file" id="pdfFiles" accept="application/pdf" multiple></div>
+                    <button class="action-btn" id="btnPdf" onclick="juntarPdfs()">Juntar e Baixar PDF</button>
+                    <div id="resPdf" class="result-box"></div>
+                </div>
+            </div>
+
+            <div id="renomearLote" class="tab-content">
+                <div class="tool-card">
+                    <h3>Renomear Arquivos em Lote</h3>
+                    <p style="font-size:13px; color:#666;">Os arquivos renomeados serão baixados automaticamente em um arquivo .zip seguro.</p>
+                    <div class="form-group"><label>Selecione os arquivos:</label><input type="file" id="loteFiles" multiple></div>
+                    <div class="form-group"><label>Prefixo do novo nome (Ex: foto):</label><input type="text" id="lotePrefixo" placeholder="arquivo"></div>
+                    <button class="action-btn" id="btnLote" onclick="renomearLote()">Renomear e Gerar ZIP</button>
+                    <div id="resLote" class="result-box"></div>
+                </div>
+            </div>
+
+            <div id="converterImagem" class="tab-content">
+                <div class="tool-card">
+                    <h3>Conversor de Formato de Imagem</h3>
+                    <div class="form-group"><label>Selecione uma imagem:</label><input type="file" id="imgFile" accept="image/png, image/jpeg, image/webp"></div>
+                    <div class="form-group"><label>Converter para:</label>
+                        <select id="imgFormat">
+                            <option value="jpeg">JPG / JPEG</option>
+                            <option value="png">PNG (Fundo Transparente)</option>
+                            <option value="webp">WEBP (Leve)</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" onclick="converterImagem()">Converter e Baixar</button>
+                </div>
+            </div>
+
+            <div id="calcMercado" class="tab-content">
                 <div class="tool-card">
                     <h3>Qual produto compensa mais?</h3>
                     <div class="form-group"><label>Produto A (R$ e Qtd):</label><input type="number" id="priceA" placeholder="Preço (Ex: 5.50)"><input type="number" id="qtyA" placeholder="Qtd" style="margin-top:5px;"></div>
@@ -246,7 +307,6 @@
                 </div>
             </div>
 
-            <!-- Categoria 2: Textos -->
             <div id="contadorTexto" class="tab-content">
                 <div class="tool-card"><h3>Contador de Texto</h3>
                     <div class="form-group"><textarea id="txtContador" oninput="contarTexto()"></textarea></div>
@@ -276,7 +336,6 @@
                 </div>
             </div>
 
-            <!-- Categoria 3: Úteis -->
             <div id="regraTres" class="tab-content">
                 <div class="tool-card"><h3>Regra de 3 Simples</h3>
                     <div style="display:flex; gap:10px;"><div class="form-group"><label>A:</label><input type="number" id="r3A"></div><div class="form-group"><label>B:</label><input type="number" id="r3B"></div></div>
@@ -322,7 +381,6 @@
                 </div>
             </div>
 
-            <!-- Categoria 4: Sorteios -->
             <div id="sorteio" class="tab-content">
                 <div class="tool-card"><h3>Sorteador Numérico</h3>
                     <div style="display:flex; gap:10px;"><div class="form-group"><label>Min:</label><input type="number" id="sortMin" value="1"></div><div class="form-group"><label>Max:</label><input type="number" id="sortMax" value="100"></div></div>
@@ -344,7 +402,6 @@
                 </div>
             </div>
             
-            <!-- Ferramenta de Moeda Atualizada (Novo Link Oficial do Emoji + CSS para forçar formato circular) -->
             <div id="caraCoroa" class="tab-content">
                 <div class="tool-card"><h3>Cara ou Coroa</h3>
                     <div style="text-align:center; margin:20px 0;">
@@ -355,7 +412,6 @@
                 </div>
             </div>
 
-            <!-- Categoria 5: Saúde e Medidas -->
             <div id="calcImc" class="tab-content">
                 <div class="tool-card"><h3>Calculadora IMC</h3>
                     <div class="form-group"><label>Peso (kg):</label><input type="number" id="imcPeso"></div><div class="form-group"><label>Altura (cm):</label><input type="number" id="imcAlt"></div>
@@ -410,6 +466,91 @@
         function exibirResultado(id, texto, tipo) {
             const el = document.getElementById(id); el.innerHTML = texto; el.className = `result-box show ${tipo}`;
         }
+        
+        function baixarArquivo(blob, nome) { 
+            const url = window.URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; a.download = nome; a.click(); 
+            window.URL.revokeObjectURL(url); 
+        }
+
+        // --- NOVAS FERRAMENTAS DE ARQUIVOS ---
+        
+        async function juntarPdfs() {
+            const files = document.getElementById('pdfFiles').files;
+            if(files.length < 2) return exibirResultado('resPdf', "Selecione no mínimo 2 arquivos PDF.", "error");
+            
+            const btn = document.getElementById('btnPdf');
+            btn.innerText = "Processando..."; btn.disabled = true;
+            
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdfGerado = await PDFDocument.create();
+                
+                for(let i = 0; i < files.length; i++) {
+                    const arrayBuffer = await files[i].arrayBuffer();
+                    const pdf = await PDFDocument.load(arrayBuffer);
+                    const copiedPages = await pdfGerado.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => pdfGerado.addPage(page));
+                }
+                
+                const pdfBytes = await pdfGerado.save();
+                baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "PDF_Unido.pdf");
+                exibirResultado('resPdf', "✅ PDF gerado e baixado com sucesso!", "success");
+            } catch (err) {
+                exibirResultado('resPdf', "Erro ao processar PDFs. Verifique se não estão com senha.", "error");
+            }
+            btn.innerText = "Juntar e Baixar PDF"; btn.disabled = false;
+        }
+
+        async function renomearLote() {
+            const files = document.getElementById('loteFiles').files;
+            let prefixo = document.getElementById('lotePrefixo').value.trim() || "arquivo";
+            if(files.length === 0) return exibirResultado('resLote', "Selecione arquivos para renomear.", "error");
+            
+            const btn = document.getElementById('btnLote');
+            btn.innerText = "Empacotando ZIP..."; btn.disabled = true;
+            
+            try {
+                const zip = new JSZip();
+                for(let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = file.name.split('.').pop();
+                    zip.file(`${prefixo}_${i+1}.${ext}`, file);
+                }
+                const content = await zip.generateAsync({type:"blob"});
+                baixarArquivo(content, "Arquivos_Renomeados.zip");
+                exibirResultado('resLote', "✅ ZIP com arquivos renomeados baixado!", "success");
+            } catch (err) {
+                exibirResultado('resLote', "Erro ao processar arquivos.", "error");
+            }
+            btn.innerText = "Renomear e Gerar ZIP"; btn.disabled = false;
+        }
+
+        function converterImagem() {
+            const file = document.getElementById('imgFile').files[0];
+            const format = document.getElementById('imgFormat').value;
+            if(!file) return alert("Selecione uma imagem primeiro!");
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL(`image/${format}`);
+                    const a = document.createElement('a');
+                    a.href = dataURL; a.download = `imagem_convertida.${format}`;
+                    a.click();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- OUTRAS FERRAMENTAS ---
 
         function calcMercado() {
             const pA = parseFloat(document.getElementById('priceA').value), qA = parseFloat(document.getElementById('qtyA').value);
@@ -549,19 +690,6 @@
         gerarSenha();
         gerarCor();
     </script>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4339228294306314"
-     crossorigin="anonymous"></script>
-<!-- Banner Topo -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-4339228294306314"
-     data-ad-slot="5606367275"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
 </body>
 </html>
