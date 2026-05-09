@@ -11,6 +11,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -77,7 +79,6 @@
         .tool-card { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto; transition: background 0.3s; }
         .tool-card h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; margin-bottom: 20px; }
         
-        /* NOVO: Estilos para o Conteúdo de SEO/Texto */
         .seo-content { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--input-border); font-size: 14px; line-height: 1.6; color: var(--text-dark); opacity: 0.8; }
         .seo-content h4 { margin-top: 0; color: var(--primary); font-size: 16px; margin-bottom: 10px;}
         .seo-content ul { padding-left: 20px; margin-bottom: 0; }
@@ -135,7 +136,7 @@
     <div class="mobile-nav">
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <h2>🛠️ DL Utils</h2>
-        <button class="dark-mode-btn" onclick="toggleDarkMode()" style="margin-left: auto;">🌗</button>
+        <button class="dark-mode-btn" onclick="toggleDarkMode()" style="margin-left: auto;">🌙</button>
     </div>
 
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -144,7 +145,7 @@
         <div class="sidebar-header">
             <h2>🛠️ DL Utils</h2>
             <div style="display:flex; gap:10px; align-items:center;">
-                <button class="dark-mode-btn" onclick="toggleDarkMode()">🌗</button>
+                <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
                 <button class="close-sidebar" onclick="toggleSidebar()">&times;</button>
             </div>
         </div>
@@ -152,8 +153,6 @@
         <div class="search-container">
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar utilitário..." onkeyup="filtrarFerramentas()">
         </div>
-        
-        
 
         <button class="category-btn" onclick="toggleAccordion(this)">📂 Arquivos e Imagens <span class="arrow">▼</span></button>
         <div class="category-content">
@@ -207,7 +206,7 @@
             <button class="tab-btn" onclick="openTab(event, 'cronometro')">⏱️ Cronômetro</button>
             <button class="tab-btn" onclick="openTab(event, 'conversorTemp')">🌡️ Temperatura</button>
         </div>
-<button class="category-btn open" onclick="toggleAccordion(this)">🏢 Institucional <span class="arrow">▼</span></button>
+        <button class="category-btn open" onclick="toggleAccordion(this)">🏢 Institucional <span class="arrow">▼</span></button>
         <div class="category-content open">
             <button class="tab-btn active" onclick="openTab(event, 'sobreNos')">📌 Sobre a DL Utils</button>
             <button class="tab-btn" onclick="openTab(event, 'politicaPrivacidade')">🔒 Política de Privacidade</button>
@@ -577,48 +576,7 @@
 <div id="toast-container"></div>
 
     <script>
-        // --- LISTA DE CÓDIGOS VIP ---
-        const codigosValidos = [
-            "DL1001VIP",
-            "DL2002VIP",
-            "DL3003VIP",
-            "DL4004VIP",
-            "DL5005VIP",
-            "DL9999VIP" 
-        ];
-
-        // --- SISTEMA VIP ---
-        function checkVIP() {
-            if(localStorage.getItem('dlutils_vip') === 'true') {
-                document.body.classList.add('vip-mode');
-                document.getElementById('btnVipStatus').innerText = "👑 Você é VIP!";
-            }
-        }
-
-        function ativarVIP() {
-            if(localStorage.getItem('dlutils_vip') === 'true') {
-                showToast("Seu VIP já está ativo! Muito obrigado pelo apoio.", "success");
-                return;
-            }
-            const codigo = prompt("Insira o seu Código VIP recebido após a doação:");
-            if(!codigo) return;
-
-            const codigoFormatado = codigo.trim().toUpperCase();
-            
-            if(codigosValidos.includes(codigoFormatado)) {
-                localStorage.setItem('dlutils_vip', 'true');
-                document.body.classList.add('vip-mode');
-                document.getElementById('btnVipStatus').innerText = "👑 Você é VIP!";
-                showToast("👑 VIP Ativado! Propagandas removidas.", "success");
-                
-                document.querySelectorAll('.ad-banner').forEach(el => el.style.display = 'none');
-            } else {
-                showToast("Código inválido ou já utilizado. Doe e peça um novo!", "error");
-            }
-        }
-        checkVIP();
-
-        // --- LAYOUT E MODO ESCURO ---
+        // === 1. DECLARAÇÃO DE TODAS AS FUNÇÕES GERAIS (Para nada quebrar) ===
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.querySelector('.sidebar-overlay').classList.toggle('open'); }
         function toggleAccordion(btn) { btn.classList.toggle("open"); let content = btn.nextElementSibling; content.style.display = (content.style.display === "flex") ? "none" : "flex"; }
         function openTab(evt, tabName) {
@@ -635,36 +593,29 @@
             document.body.classList.toggle('dark-theme');
             localStorage.setItem('dlutils_darkmode', document.body.classList.contains('dark-theme'));
         }
+        
         if(localStorage.getItem('dlutils_darkmode') === 'true') { document.body.classList.add('dark-theme'); }
 
         function filtrarFerramentas() {
             const termo = document.getElementById('searchInput').value.toLowerCase();
             const botoes = document.querySelectorAll('.sidebar .tab-btn');
-            botoes.forEach(btn => {
-                btn.style.display = btn.innerText.toLowerCase().includes(termo) ? 'flex' : 'none';
-            });
-            if(termo !== '') {
-                document.querySelectorAll('.category-btn').forEach(btn => { btn.classList.add('open'); btn.nextElementSibling.style.display = 'flex'; });
-            }
+            botoes.forEach(btn => { btn.style.display = btn.innerText.toLowerCase().includes(termo) ? 'flex' : 'none'; });
+            if(termo !== '') { document.querySelectorAll('.category-btn').forEach(btn => { btn.classList.add('open'); btn.nextElementSibling.style.display = 'flex'; }); }
         }
 
-        // --- SISTEMA DE TOASTS ---
         function showToast(msg, tipo = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div'); toast.className = `toast ${tipo}`;
-            toast.innerHTML = (tipo === 'success' ? '✅ ' : '❌ ') + msg;
+            toast.innerHTML = (tipo === 'success' ? '✅ ' : (tipo === 'info' ? 'ℹ️ ' : '❌ ')) + msg;
             container.appendChild(toast); setTimeout(() => toast.remove(), 3000);
         }
 
         function exibirResultado(id, texto, tipo) { document.getElementById(id).innerHTML = texto; document.getElementById(id).className = `result-box show ${tipo}`; }
         function baixarArquivo(blob, nome) { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = nome; a.click(); window.URL.revokeObjectURL(url); }
 
-        // --- CALCULADORA ---
+        // --- FUNÇÕES DA CALCULADORA ---
         let isSci = false;
-        function appendCalc(val) {
-            const disp = document.getElementById('calcDisplay');
-            if (disp.innerText === '0' || disp.innerText === 'Erro') disp.innerText = ''; disp.innerText += val;
-        }
+        function appendCalc(val) { const disp = document.getElementById('calcDisplay'); if (disp.innerText === '0' || disp.innerText === 'Erro') disp.innerText = ''; disp.innerText += val; }
         function clearCalc() { document.getElementById('calcDisplay').innerText = '0'; }
         function calculate() {
             try {
@@ -677,14 +628,11 @@
                 document.getElementById('calcDisplay').innerText = res;
             } catch (e) { document.getElementById('calcDisplay').innerText = 'Erro'; }
         }
-        function toggleSci() {
-            isSci = !isSci; document.getElementById('sciButtons').style.display = isSci ? 'grid' : 'none'; document.getElementById('btnToggleSci').innerText = isSci ? 'Modo Convencional' : 'Modo Científico';
-        }
+        function toggleSci() { isSci = !isSci; document.getElementById('sciButtons').style.display = isSci ? 'grid' : 'none'; document.getElementById('btnToggleSci').innerText = isSci ? 'Modo Convencional' : 'Modo Científico'; }
 
-        // --- ARQUIVOS ---
+        // --- FUNÇÕES DE PDF E IMAGENS ---
         async function juntarPdfs() {
-            const files = document.getElementById('pdfFiles').files;
-            if(files.length < 2) return showToast("Selecione no mínimo 2 arquivos PDF.", "error");
+            const files = document.getElementById('pdfFiles').files; if(files.length < 2) return showToast("Selecione no mínimo 2 arquivos PDF.", "error");
             const btn = document.getElementById('btnPdf'); btn.innerText = "Processando..."; btn.disabled = true;
             try {
                 const { PDFDocument } = PDFLib; const pdfGerado = await PDFDocument.create();
@@ -699,8 +647,7 @@
         }
 
         async function desbloquearPdf() {
-            const fileInput = document.getElementById('pdfBloqueado');
-            if(fileInput.files.length === 0) return showToast("Selecione um PDF.", "error");
+            const fileInput = document.getElementById('pdfBloqueado'); if(fileInput.files.length === 0) return showToast("Selecione um PDF.", "error");
             const btn = document.getElementById('btnDesbloquear'); btn.innerText = "Processando..."; btn.disabled = true;
             try {
                 const { PDFDocument } = PDFLib;
@@ -744,14 +691,12 @@
                             page.drawImage(pngImage, { x: 0, y: 0, width: pngImage.width, height: pngImage.height });
                             baixarArquivo(new Blob([await pdf.save()], {type: "application/pdf"}), "imagem_convertida.pdf"); showToast("PDF baixado!");
                         } catch(err) { showToast("Erro ao converter para PDF.", "error"); }
-                    } else {
-                        const a = document.createElement('a'); a.href = canvas.toDataURL(`image/${format}`); a.download = `convertida.${format}`; a.click(); showToast("Imagem baixada!");
-                    }
+                    } else { const a = document.createElement('a'); a.href = canvas.toDataURL(`image/${format}`); a.download = `convertida.${format}`; a.click(); showToast("Imagem baixada!"); }
                 }; img.src = e.target.result;
             }; reader.readAsDataURL(file);
         }
 
-        // --- FINANÇAS ---
+        // --- FUNÇÕES FINANCEIRAS ---
         function calcMercado() {
             const pA = parseFloat(document.getElementById('priceA').value), qA = parseFloat(document.getElementById('qtyA').value);
             const pB = parseFloat(document.getElementById('priceB').value), qB = parseFloat(document.getElementById('qtyB').value);
@@ -787,7 +732,7 @@
             (a/g < 0.7) ? exibirResultado('resCombustivel', "Abasteça com <b>Álcool</b>!", "success") : exibirResultado('resCombustivel', "Abasteça com <b>Gasolina</b>!", "info");
         }
 
-        // --- TEXTOS E OUTROS ---
+        // --- FUNÇÕES DE TEXTO E OUTROS ---
         function contarTexto() {
             const txt = document.getElementById('txtContador').value;
             document.getElementById('resCaracteres').innerText = txt.length; document.getElementById('resPalavras').innerText = txt.trim()?txt.trim().split(/\s+/).length:0;
@@ -800,8 +745,7 @@
         }
         function inverterTexto() { document.getElementById('resInvertido').value = document.getElementById('txtInverter').value.split('').reverse().join(''); }
         function lerTexto() {
-            const txt = document.getElementById('txtLeitor').value;
-            if(!txt) return showToast("Digite algo para ler!", "error");
+            const txt = document.getElementById('txtLeitor').value; if(!txt) return showToast("Digite algo para ler!", "error");
             if('speechSynthesis' in window) { window.speechSynthesis.cancel(); const msg = new SpeechSynthesisUtterance(txt); msg.lang = 'pt-BR'; window.speechSynthesis.speak(msg); } else { showToast("Navegador não suporta áudio.", "error"); }
         }
         function gerarLorem() {
@@ -814,7 +758,6 @@
             if(n.length===0) return exibirResultado('resSorteioNome', "Cole nomes!", "error");
             exibirResultado('resSorteioNome', `🎉 <b>${n[Math.floor(Math.random()*n.length)]}</b>`, "success");
         }
-
         function calcRegraTres() {
             const a=parseFloat(document.getElementById('r3A').value), b=parseFloat(document.getElementById('r3B').value), c=parseFloat(document.getElementById('r3C').value);
             if(!a||!b||!c) return exibirResultado('resR3', "Erro!", "error");
@@ -830,11 +773,8 @@
             document.getElementById('senhaResult').value = Array.from({length:s}).map(()=>c.charAt(Math.floor(Math.random()*c.length))).join('');
         }
         function copiarValor(id) { document.getElementById(id).select(); document.execCommand("copy"); showToast("Copiado com sucesso!"); }
-        
         function randomHex() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0').toUpperCase(); }
-        function gerarCor() {
-            for(let i=1; i<=3; i++) { let cor = randomHex(); let box = document.getElementById('corBox'+i); box.style.backgroundColor = cor; box.innerText = cor; }
-        }
+        function gerarCor() { for(let i=1; i<=3; i++) { let cor = randomHex(); let box = document.getElementById('corBox'+i); box.style.backgroundColor = cor; box.innerText = cor; } }
         function gerarLinkZap() {
             const num = document.getElementById('zapNum').value.replace(/\D/g,''); if(!num) return showToast("Digite o número", "error");
             document.getElementById('zapResult').value = `https://wa.me/55${num}?text=${encodeURIComponent(document.getElementById('zapMsg').value)}`;
@@ -843,7 +783,6 @@
             const t = document.getElementById('qrTexto').value; if(!t) return showToast("Digite algo!", "error");
             document.getElementById('imgQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(t)}`; document.getElementById('resQr').style.display="block";
         }
-
         function sortearNumero() {
             const min=Math.ceil(document.getElementById('sortMin').value), max=Math.floor(document.getElementById('sortMax').value);
             exibirResultado('resSorteio', Math.floor(Math.random()*(max-min+1))+min, "success");
@@ -857,7 +796,6 @@
             img.classList.add('spin-anim'); resBox.innerHTML = "Girando a moeda..."; resBox.className = "result-box show info";
             setTimeout(() => { img.classList.remove('spin-anim'); exibirResultado('resMoeda', Math.random() < 0.5 ? "Caiu: <b>CARA</b>" : "Caiu: <b>COROA</b>", "success"); }, 800);
         }
-
         function calcImc() {
             const p=parseFloat(document.getElementById('imcPeso').value), a=parseFloat(document.getElementById('imcAlt').value)/100;
             if(!p||!a) return exibirResultado('resImc',"Erro!","error");
@@ -870,7 +808,86 @@
         function resetarCron(){ pararCron(); tc=0; document.getElementById('displayCron').innerText="00:00"; }
         function converterTemp(){ document.getElementById('tempF').value=((parseFloat(document.getElementById('tempC').value)*9/5)+32).toFixed(2); }
 
-        gerarSenha(); gerarCor();
+
+        // === 2. INICIALIZAÇÃO SEGURA DO SUPABASE E SISTEMA VIP ===
+        let supabaseClient = null;
+
+        function checkVIP() {
+            if(localStorage.getItem('dlutils_vip') === 'true') {
+                document.body.classList.add('vip-mode');
+                const btnVip = document.getElementById('btnVipStatus');
+                if(btnVip) btnVip.innerText = "👑 Você é VIP!";
+                document.querySelectorAll('.ad-banner').forEach(el => el.style.display = 'none');
+            }
+        }
+
+        function initSupabase() {
+            try {
+                // ⚠️ ATENÇÃO: SUBSTITUA AS DUAS LINHAS ABAIXO COM SUAS CHAVES DO SUPABASE MANTENDO AS ASPAS!
+                const supabaseUrl = 'https://asjhapdvlzpsepxjzwnd.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzamhhcGR2bHpwc2VweGp6d25kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDQ3OTgsImV4cCI6MjA5MzkyMDc5OH0.lo98lRShd8YgrVcGxGovTRFF9Rbpw11uH7wLOZcQHEU';
+                
+                if (supabaseUrl && supabaseUrl !== 'COLOQUE_SUA_URL_AQUI' && window.supabase) {
+                    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+                    console.log("✅ Conexão com Supabase preparada!");
+                } else {
+                    console.warn("ℹ️ As chaves do banco de dados não foram preenchidas no HTML.");
+                }
+            } catch (error) {
+                console.error("⚠️ Supabase não pode ser carregado.", error);
+            }
+        }
+
+        async function ativarVIP() {
+            if(localStorage.getItem('dlutils_vip') === 'true') {
+                showToast("Seu VIP já está ativo! Muito obrigado pelo apoio.", "success");
+                return;
+            }
+            
+            const codigo = prompt("Insira o seu Código VIP recebido após a doação:");
+            if(!codigo) return;
+
+            if (!supabaseClient) {
+                showToast("Erro: O Banco de Dados não foi configurado. Insira as chaves no código HTML.", "error");
+                return;
+            }
+
+            const codigoFormatado = codigo.trim().toUpperCase();
+            showToast("Consultando o banco de dados...", "info");
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('vip_codes')
+                    .select('*')
+                    .eq('codigo', codigoFormatado)
+                    .eq('ativo', true);
+
+                if (error) {
+                    console.error("Erro retornado pelo Supabase:", error);
+                    showToast("Erro de permissão ou conexão com o banco. Veja o Console (F12).", "error");
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    showToast("Código inválido ou desativado.", "error");
+                    return;
+                }
+
+                localStorage.setItem('dlutils_vip', 'true');
+                checkVIP();
+                showToast("👑 VIP Ativado com sucesso! Propagandas removidas.", "success");
+            } catch (err) {
+                console.error("Erro interno no JS:", err);
+                showToast("Falha grave de conexão.", "error");
+            }
+        }
+
+        gerarSenha(); 
+        gerarCor();
+        checkVIP();
+        
+        window.addEventListener('DOMContentLoaded', initSupabase);
+
     </script>
 </body>
 </html>
