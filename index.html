@@ -164,6 +164,7 @@
         <button class="category-btn open" onclick="toggleAccordion(this)">📂 Arquivos e Imagens <span class="arrow">▼</span></button>
         <div class="category-content open">
             <button class="tab-btn active" onclick="openTab(event, 'juntarPdf')">📄 Juntar PDFs</button>
+            <button class="tab-btn" onclick="openTab(event, 'desbloquearPdf')">🔓 Desbloquear PDF</button>
             <button class="tab-btn" onclick="openTab(event, 'renomearLote')">📝 Renomear em Lote</button>
             <button class="tab-btn" onclick="openTab(event, 'converterImagem')">🖼️ Conversor de Imagens</button>
         </div>
@@ -173,6 +174,7 @@
             <button class="tab-btn" onclick="openTab(event, 'calcMercado')">🛒 Compensa Mais?</button>
             <button class="tab-btn" onclick="openTab(event, 'calcPorcentagem')">📉 Porcentagem</button>
             <button class="tab-btn" onclick="openTab(event, 'calcDesconto')">🏷️ Calc. de Desconto</button>
+            <button class="tab-btn" onclick="openTab(event, 'calcJuros')">📈 Juros Compostos</button>
             <button class="tab-btn" onclick="openTab(event, 'dividirConta')">🍕 Dividir Conta</button>
             <button class="tab-btn" onclick="openTab(event, 'alcoolGasolina')">⛽ Álcool ou Gasolina</button>
         </div>
@@ -182,6 +184,8 @@
             <button class="tab-btn" onclick="openTab(event, 'contadorTexto')">📊 Contador de Texto</button>
             <button class="tab-btn" onclick="openTab(event, 'formataTexto')">Aa Formatar Letras</button>
             <button class="tab-btn" onclick="openTab(event, 'textoInvertido')">🔄 Texto ao Contrário</button>
+            <button class="tab-btn" onclick="openTab(event, 'leitorTexto')">🗣️ Leitor de Texto</button>
+            <button class="tab-btn" onclick="openTab(event, 'loremIpsum')">📜 Gerador Lorem Ipsum</button>
             <button class="tab-btn" onclick="openTab(event, 'sorteioNomes')">👥 Sorteador de Nomes</button>
         </div>
         
@@ -241,6 +245,16 @@
                     <div id="resPdf" class="result-box"></div>
                 </div>
             </div>
+            
+            <div id="desbloquearPdf" class="tab-content">
+                <div class="tool-card">
+                    <h3>Desbloquear PDF (Remover Trava)</h3>
+                    <p style="font-size:13px; color:#666;">Cria uma cópia limpa do PDF, removendo bloqueios de edição, impressão e cópia (owner password).</p>
+                    <div class="form-group"><label>Selecione o PDF bloqueado:</label><input type="file" id="pdfBloqueado" accept="application/pdf"></div>
+                    <button class="action-btn" id="btnDesbloquear" onclick="desbloquearPdf()">Desbloquear e Baixar</button>
+                    <div id="resDesbloqueio" class="result-box"></div>
+                </div>
+            </div>
 
             <div id="renomearLote" class="tab-content">
                 <div class="tool-card">
@@ -252,7 +266,7 @@
                     <div id="resLote" class="result-box"></div>
                 </div>
             </div>
-
+            
             <div id="converterImagem" class="tab-content">
                 <div class="tool-card">
                     <h3>Conversor de Formato de Imagem</h3>
@@ -262,6 +276,7 @@
                             <option value="jpeg">JPG / JPEG</option>
                             <option value="png">PNG (Fundo Transparente)</option>
                             <option value="webp">WEBP (Leve)</option>
+                            <option value="pdf">PDF (Documento)</option>
                         </select>
                     </div>
                     <button class="action-btn" onclick="converterImagem()">Converter e Baixar</button>
@@ -289,6 +304,15 @@
                     <div class="form-group"><label>Preço Original (R$):</label><input type="number" id="descPreco" placeholder="Ex: 150.00"></div>
                     <div class="form-group"><label>Desconto (%):</label><input type="number" id="descPct" placeholder="Ex: 20"></div>
                     <button class="action-btn" onclick="calcularDesconto()">Ver Preço Final</button><div id="resDesconto" class="result-box"></div>
+                </div>
+            </div>
+            <div id="calcJuros" class="tab-content">
+                <div class="tool-card"><h3>Juros Compostos</h3>
+                    <div class="form-group"><label>Valor Inicial (R$):</label><input type="number" id="jcValor" placeholder="Ex: 1000"></div>
+                    <div class="form-group"><label>Taxa de Juros (% ao mês):</label><input type="number" id="jcTaxa" placeholder="Ex: 1.5"></div>
+                    <div class="form-group"><label>Período (Meses):</label><input type="number" id="jcMeses" placeholder="Ex: 12"></div>
+                    <button class="action-btn" onclick="calcularJuros()">Calcular Rendimento</button>
+                    <div id="resJuros" class="result-box"></div>
                 </div>
             </div>
             <div id="dividirConta" class="tab-content">
@@ -327,6 +351,21 @@
                 <div class="tool-card"><h3>Texto ao Contrário</h3>
                     <div class="form-group"><label>Digite aqui:</label><textarea id="txtInverter" oninput="inverterTexto()"></textarea></div>
                     <div class="form-group"><label>Resultado Invertido:</label><textarea id="resInvertido" readonly style="background:#e9ecef;"></textarea></div>
+                </div>
+            </div>
+            <div id="leitorTexto" class="tab-content">
+                <div class="tool-card"><h3>Leitor de Texto em Áudio</h3>
+                    <p style="font-size:13px; color:#666;">Cole um texto abaixo e deixe o navegador ler para você.</p>
+                    <div class="form-group"><textarea id="txtLeitor" placeholder="Cole ou digite o texto aqui..."></textarea></div>
+                    <button class="action-btn" onclick="lerTexto()">Ouvir Texto 🗣️</button>
+                </div>
+            </div>
+            <div id="loremIpsum" class="tab-content">
+                <div class="tool-card"><h3>Gerador de Lorem Ipsum</h3>
+                    <div class="form-group"><label>Quantidade de Parágrafos:</label><input type="number" id="loremQtd" value="3" min="1" max="10"></div>
+                    <button class="action-btn" onclick="gerarLorem()">Gerar Texto</button>
+                    <div class="form-group" style="margin-top:15px;"><textarea id="resLorem" readonly style="height:150px; background:#e9ecef;"></textarea></div>
+                    <button class="action-btn" style="background:#28a745;" onclick="copiarValor('resLorem')">Copiar Texto</button>
                 </div>
             </div>
             <div id="sorteioNomes" class="tab-content">
@@ -401,7 +440,6 @@
                     <div id="resDado" class="result-box" style="font-size:40px; border:2px dashed var(--primary);"></div>
                 </div>
             </div>
-            
             <div id="caraCoroa" class="tab-content">
                 <div class="tool-card"><h3>Cara ou Coroa</h3>
                     <div style="text-align:center; margin:20px 0;">
@@ -474,83 +512,122 @@
             window.URL.revokeObjectURL(url); 
         }
 
-        // --- NOVAS FERRAMENTAS DE ARQUIVOS ---
+        // --- ARQUIVOS ---
         
         async function juntarPdfs() {
             const files = document.getElementById('pdfFiles').files;
             if(files.length < 2) return exibirResultado('resPdf', "Selecione no mínimo 2 arquivos PDF.", "error");
-            
-            const btn = document.getElementById('btnPdf');
-            btn.innerText = "Processando..."; btn.disabled = true;
-            
+            const btn = document.getElementById('btnPdf'); btn.innerText = "Processando..."; btn.disabled = true;
             try {
-                const { PDFDocument } = PDFLib;
-                const pdfGerado = await PDFDocument.create();
-                
+                const { PDFDocument } = PDFLib; const pdfGerado = await PDFDocument.create();
                 for(let i = 0; i < files.length; i++) {
                     const arrayBuffer = await files[i].arrayBuffer();
                     const pdf = await PDFDocument.load(arrayBuffer);
                     const copiedPages = await pdfGerado.copyPages(pdf, pdf.getPageIndices());
                     copiedPages.forEach((page) => pdfGerado.addPage(page));
                 }
-                
                 const pdfBytes = await pdfGerado.save();
                 baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "PDF_Unido.pdf");
                 exibirResultado('resPdf', "✅ PDF gerado e baixado com sucesso!", "success");
-            } catch (err) {
-                exibirResultado('resPdf', "Erro ao processar PDFs. Verifique se não estão com senha.", "error");
-            }
+            } catch (err) { exibirResultado('resPdf', "Erro ao processar PDFs.", "error"); }
             btn.innerText = "Juntar e Baixar PDF"; btn.disabled = false;
+        }
+
+        async function desbloquearPdf() {
+            const fileInput = document.getElementById('pdfBloqueado');
+            if(fileInput.files.length === 0) return exibirResultado('resDesbloqueio', "Selecione um PDF.", "error");
+            
+            const btn = document.getElementById('btnDesbloquear');
+            btn.innerText = "Processando..."; btn.disabled = true;
+            
+            try {
+                const { PDFDocument } = PDFLib;
+                const arrayBuffer = await fileInput.files[0].arrayBuffer();
+                const originalPdf = await PDFDocument.load(arrayBuffer);
+                
+                const novoPdf = await PDFDocument.create();
+                const paginas = await novoPdf.copyPages(originalPdf, originalPdf.getPageIndices());
+                paginas.forEach(page => novoPdf.addPage(page));
+                
+                const pdfBytes = await novoPdf.save();
+                baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "PDF_Desbloqueado.pdf");
+                
+                exibirResultado('resDesbloqueio', "✅ PDF Desbloqueado com sucesso!", "success");
+            } catch (err) {
+                exibirResultado('resDesbloqueio', "Aviso: Se o PDF possui senha de abertura pesada, não será possível converter.", "error");
+            }
+            btn.innerText = "Desbloquear e Baixar"; btn.disabled = false;
         }
 
         async function renomearLote() {
             const files = document.getElementById('loteFiles').files;
             let prefixo = document.getElementById('lotePrefixo').value.trim() || "arquivo";
-            if(files.length === 0) return exibirResultado('resLote', "Selecione arquivos para renomear.", "error");
-            
-            const btn = document.getElementById('btnLote');
-            btn.innerText = "Empacotando ZIP..."; btn.disabled = true;
-            
+            if(files.length === 0) return exibirResultado('resLote', "Selecione arquivos.", "error");
+            const btn = document.getElementById('btnLote'); btn.innerText = "Empacotando..."; btn.disabled = true;
             try {
                 const zip = new JSZip();
                 for(let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const ext = file.name.split('.').pop();
-                    zip.file(`${prefixo}_${i+1}.${ext}`, file);
+                    const file = files[i]; const ext = file.name.split('.').pop(); zip.file(`${prefixo}_${i+1}.${ext}`, file);
                 }
                 const content = await zip.generateAsync({type:"blob"});
                 baixarArquivo(content, "Arquivos_Renomeados.zip");
-                exibirResultado('resLote', "✅ ZIP com arquivos renomeados baixado!", "success");
-            } catch (err) {
-                exibirResultado('resLote', "Erro ao processar arquivos.", "error");
-            }
+                exibirResultado('resLote', "✅ ZIP baixado com sucesso!", "success");
+            } catch (err) { exibirResultado('resLote', "Erro ao processar.", "error"); }
             btn.innerText = "Renomear e Gerar ZIP"; btn.disabled = false;
         }
 
         function converterImagem() {
-            const file = document.getElementById('imgFile').files[0];
+            const file = document.getElementById('imgFile').files[0]; 
             const format = document.getElementById('imgFormat').value;
-            if(!file) return alert("Selecione uma imagem primeiro!");
+            if(!file) return alert("Selecione uma imagem!");
             
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas'); 
+                    canvas.width = img.width; 
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d'); 
                     ctx.drawImage(img, 0, 0);
-                    const dataURL = canvas.toDataURL(`image/${format}`);
-                    const a = document.createElement('a');
-                    a.href = dataURL; a.download = `imagem_convertida.${format}`;
-                    a.click();
-                };
+                    
+                    // NOVA LÓGICA: Se o usuário selecionou PDF
+                    if (format === 'pdf') {
+                        try {
+                            const { PDFDocument } = PDFLib;
+                            const pdf = await PDFDocument.create();
+                            
+                            // Converte primeiro para PNG para garantir que a biblioteca entenda a imagem
+                            const base64 = canvas.toDataURL('image/png').split(',')[1];
+                            const imgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                            
+                            // Embutir no PDF
+                            const pngImage = await pdf.embedPng(imgBytes);
+                            
+                            // Cria uma página do exato tamanho da imagem
+                            const page = pdf.addPage([pngImage.width, pngImage.height]);
+                            page.drawImage(pngImage, { x: 0, y: 0, width: pngImage.width, height: pngImage.height });
+                            
+                            const pdfBytes = await pdf.save();
+                            baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "imagem_convertida.pdf");
+                        } catch(err) {
+                            alert("Erro ao converter para PDF.");
+                        }
+                    } 
+                    // Lógica Normal: JPG, PNG, WEBP
+                    else {
+                        const a = document.createElement('a'); 
+                        a.href = canvas.toDataURL(`image/${format}`); 
+                        a.download = `convertida.${format}`; 
+                        a.click();
+                    }
+                }; 
                 img.src = e.target.result;
-            };
+            }; 
             reader.readAsDataURL(file);
         }
 
-        // --- OUTRAS FERRAMENTAS ---
+        // --- FINANÇAS ---
 
         function calcMercado() {
             const pA = parseFloat(document.getElementById('priceA').value), qA = parseFloat(document.getElementById('qtyA').value);
@@ -574,6 +651,16 @@
             exibirResultado('resDesconto', `Final: <b>R$ ${(p - (p*(d/100))).toFixed(2)}</b><br>Economia: R$ ${(p*(d/100)).toFixed(2)}`, "success");
         }
 
+        function calcularJuros() {
+            const c = parseFloat(document.getElementById('jcValor').value);
+            const i = parseFloat(document.getElementById('jcTaxa').value) / 100;
+            const t = parseFloat(document.getElementById('jcMeses').value);
+            if(isNaN(c) || isNaN(i) || isNaN(t)) return exibirResultado('resJuros', "Preencha todos os campos!", "error");
+            const m = c * Math.pow((1 + i), t);
+            const juros = m - c;
+            exibirResultado('resJuros', `Total Acumulado: <b>R$ ${m.toFixed(2)}</b><br>Apenas Juros: R$ ${juros.toFixed(2)}`, "success");
+        }
+
         function dividirConta() {
             const tot = parseFloat(document.getElementById('contaTotal').value), g = parseFloat(document.getElementById('contaGorjeta').value||0), p = parseInt(document.getElementById('contaPessoas').value);
             if (!tot||!p) return exibirResultado('resConta', "Erro!", "error");
@@ -585,6 +672,8 @@
             if (!a||!g) return exibirResultado('resCombustivel', "Preencha!", "error");
             (a/g < 0.7) ? exibirResultado('resCombustivel', "Abasteça com <b>Álcool</b>!", "success") : exibirResultado('resCombustivel', "Abasteça com <b>Gasolina</b>!", "info");
         }
+
+        // --- TEXTOS ---
 
         function contarTexto() {
             const txt = document.getElementById('txtContador').value;
@@ -599,8 +688,24 @@
         }
 
         function inverterTexto() {
-            const txt = document.getElementById('txtInverter').value;
-            document.getElementById('resInvertido').value = txt.split('').reverse().join('');
+            document.getElementById('resInvertido').value = document.getElementById('txtInverter').value.split('').reverse().join('');
+        }
+
+        function lerTexto() {
+            const txt = document.getElementById('txtLeitor').value;
+            if(!txt) return alert("Digite algo para ler!");
+            if('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(txt); msg.lang = 'pt-BR';
+                window.speechSynthesis.speak(msg);
+            } else { alert("Navegador não suporta leitura em áudio."); }
+        }
+
+        function gerarLorem() {
+            const qtd = parseInt(document.getElementById('loremQtd').value) || 1;
+            const p = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+            let res = ""; for(let i=0; i<qtd; i++) res += p + "\n\n";
+            document.getElementById('resLorem').value = res.trim();
         }
 
         function sortearNome() {
@@ -608,6 +713,8 @@
             if(n.length===0) return exibirResultado('resSorteioNome', "Cole nomes!", "error");
             exibirResultado('resSorteioNome', `🎉 <b>${n[Math.floor(Math.random()*n.length)]}</b>`, "success");
         }
+
+        // --- ÚTEIS ---
 
         function calcRegraTres() {
             const a=parseFloat(document.getElementById('r3A').value), b=parseFloat(document.getElementById('r3B').value), c=parseFloat(document.getElementById('r3C').value);
@@ -630,15 +737,12 @@
         function randomHex() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0').toUpperCase(); }
         function gerarCor() {
             for(let i=1; i<=3; i++) {
-                let cor = randomHex();
-                let box = document.getElementById('corBox'+i);
-                box.style.backgroundColor = cor; box.innerText = cor;
+                let cor = randomHex(); let box = document.getElementById('corBox'+i); box.style.backgroundColor = cor; box.innerText = cor;
             }
         }
 
         function gerarLinkZap() {
-            const num = document.getElementById('zapNum').value.replace(/\D/g,'');
-            if(!num) return alert("Erro");
+            const num = document.getElementById('zapNum').value.replace(/\D/g,''); if(!num) return alert("Erro");
             document.getElementById('zapResult').value = `https://wa.me/55${num}?text=${encodeURIComponent(document.getElementById('zapMsg').value)}`;
         }
 
@@ -648,30 +752,28 @@
             document.getElementById('resQr').style.display="block";
         }
 
+        // --- SORTEIOS E JOGOS ---
+
         function sortearNumero() {
             const min=Math.ceil(document.getElementById('sortMin').value), max=Math.floor(document.getElementById('sortMax').value);
             exibirResultado('resSorteio', Math.floor(Math.random()*(max-min+1))+min, "success");
         }
 
         function jogarDado() {
-            const numLados = parseInt(document.getElementById('tipoDado').value);
-            const sorteado = Math.floor(Math.random() * numLados) + 1;
-            exibirResultado('resDado', `🎲 <b>${sorteado}</b>`, "success");
+            const nLados = parseInt(document.getElementById('tipoDado').value);
+            exibirResultado('resDado', `🎲 <b>${Math.floor(Math.random() * nLados) + 1}</b>`, "success");
         }
 
         function jogarMoeda() {
-            const img = document.getElementById('moedaImg');
-            const resBox = document.getElementById('resMoeda');
-            
-            img.classList.add('spin-anim'); // Inicia a animação de giro da imagem
-            resBox.innerHTML = "Girando a moeda..."; 
-            resBox.className = "result-box show info";
-            
+            const img = document.getElementById('moedaImg'), resBox = document.getElementById('resMoeda');
+            img.classList.add('spin-anim'); resBox.innerHTML = "Girando a moeda..."; resBox.className = "result-box show info";
             setTimeout(() => {
-                img.classList.remove('spin-anim'); // Para a animação
+                img.classList.remove('spin-anim');
                 exibirResultado('resMoeda', Math.random() < 0.5 ? "Caiu: <b>CARA</b>" : "Caiu: <b>COROA</b>", "success");
             }, 800);
         }
+
+        // --- SAÚDE E MEDIDAS ---
 
         function calcImc() {
             const p=parseFloat(document.getElementById('imcPeso').value), a=parseFloat(document.getElementById('imcAlt').value)/100;
@@ -684,12 +786,11 @@
         function iniciarCron(){ clearInterval(ic); ic=setInterval(()=>{ tc++; document.getElementById('displayCron').innerText=formatarTempo(tc);},1000); }
         function pararCron(){ clearInterval(ic); }
         function resetarCron(){ pararCron(); tc=0; document.getElementById('displayCron').innerText="00:00"; }
-
+        
         function converterTemp(){ document.getElementById('tempF').value=((parseFloat(document.getElementById('tempC').value)*9/5)+32).toFixed(2); }
 
-        gerarSenha();
-        gerarCor();
+        // Inicializadores
+        gerarSenha(); gerarCor();
     </script>
-
 </body>
 </html>
