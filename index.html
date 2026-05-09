@@ -153,12 +153,7 @@
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar utilitário..." onkeyup="filtrarFerramentas()">
         </div>
         
-        <button class="category-btn open" onclick="toggleAccordion(this)">🏢 Institucional <span class="arrow">▼</span></button>
-        <div class="category-content open">
-            <button class="tab-btn active" onclick="openTab(event, 'sobreNos')">📌 Sobre a DL Utils</button>
-            <button class="tab-btn" onclick="openTab(event, 'politicaPrivacidade')">🔒 Política de Privacidade</button>
-            <button class="tab-btn" onclick="openTab(event, 'termosUso')">📜 Termos de Uso</button>
-        </div>
+        
 
         <button class="category-btn" onclick="toggleAccordion(this)">📂 Arquivos e Imagens <span class="arrow">▼</span></button>
         <div class="category-content">
@@ -212,7 +207,12 @@
             <button class="tab-btn" onclick="openTab(event, 'cronometro')">⏱️ Cronômetro</button>
             <button class="tab-btn" onclick="openTab(event, 'conversorTemp')">🌡️ Temperatura</button>
         </div>
-
+<button class="category-btn open" onclick="toggleAccordion(this)">🏢 Institucional <span class="arrow">▼</span></button>
+        <div class="category-content open">
+            <button class="tab-btn active" onclick="openTab(event, 'sobreNos')">📌 Sobre a DL Utils</button>
+            <button class="tab-btn" onclick="openTab(event, 'politicaPrivacidade')">🔒 Política de Privacidade</button>
+            <button class="tab-btn" onclick="openTab(event, 'termosUso')">📜 Termos de Uso</button>
+        </div>
         <div style="flex-grow: 1;"></div>
         
         <div class="support-box">
