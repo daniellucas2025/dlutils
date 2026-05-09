@@ -1,326 +1,3 @@
-<script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('open');
-        }
-
-        function toggleAccordion(btn) {
-            btn.classList.toggle("open");
-            let content = btn.nextElementSibling;
-            if (content.style.display === "flex") {
-                content.style.display = "none";
-            } else {
-                content.style.display = "flex";
-            }
-        }
-
-        function openTab(evt, tabName) {
-            const tabContents = document.getElementsByClassName("tab-content");
-            for (let i = 0; i < tabContents.length; i++) tabContents[i].classList.remove("active");
-            
-            const tabBtns = document.getElementsByClassName("tab-btn");
-            for (let i = 0; i < tabBtns.length; i++) tabBtns[i].classList.remove("active");
-            
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
-
-            if(window.innerWidth <= 768) { toggleSidebar(); }
-        }
-
-        function exibirResultado(id, texto, tipo) {
-            const el = document.getElementById(id); el.innerHTML = texto; el.className = `result-box show ${tipo}`;
-        }
-        
-        function baixarArquivo(blob, nome) { 
-            const url = window.URL.createObjectURL(blob); 
-            const a = document.createElement('a'); 
-            a.href = url; a.download = nome; a.click(); 
-            window.URL.revokeObjectURL(url); 
-        }
-
-        // --- ARQUIVOS ---
-        
-        async function juntarPdfs() {
-            const files = document.getElementById('pdfFiles').files;
-            if(files.length < 2) return exibirResultado('resPdf', "Selecione no mínimo 2 arquivos PDF.", "error");
-            const btn = document.getElementById('btnPdf'); btn.innerText = "Processando..."; btn.disabled = true;
-            try {
-                const { PDFDocument } = PDFLib; const pdfGerado = await PDFDocument.create();
-                for(let i = 0; i < files.length; i++) {
-                    const arrayBuffer = await files[i].arrayBuffer();
-                    const pdf = await PDFDocument.load(arrayBuffer);
-                    const copiedPages = await pdfGerado.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => pdfGerado.addPage(page));
-                }
-                const pdfBytes = await pdfGerado.save();
-                baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "PDF_Unido.pdf");
-                exibirResultado('resPdf', "✅ PDF gerado e baixado com sucesso!", "success");
-            } catch (err) { exibirResultado('resPdf', "Erro ao processar PDFs.", "error"); }
-            btn.innerText = "Juntar e Baixar PDF"; btn.disabled = false;
-        }
-
-        async function desbloquearPdf() {
-            const fileInput = document.getElementById('pdfBloqueado');
-            if(fileInput.files.length === 0) return exibirResultado('resDesbloqueio', "Selecione um PDF.", "error");
-            
-            const btn = document.getElementById('btnDesbloquear');
-            btn.innerText = "Processando..."; btn.disabled = true;
-            
-            try {
-                const { PDFDocument } = PDFLib;
-                const arrayBuffer = await fileInput.files[0].arrayBuffer();
-                const originalPdf = await PDFDocument.load(arrayBuffer);
-                
-                const novoPdf = await PDFDocument.create();
-                const paginas = await novoPdf.copyPages(originalPdf, originalPdf.getPageIndices());
-                paginas.forEach(page => novoPdf.addPage(page));
-                
-                const pdfBytes = await novoPdf.save();
-                baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "PDF_Desbloqueado.pdf");
-                
-                exibirResultado('resDesbloqueio', "✅ PDF Desbloqueado com sucesso!", "success");
-            } catch (err) {
-                exibirResultado('resDesbloqueio', "Aviso: Se o PDF possui senha de abertura pesada, não será possível converter.", "error");
-            }
-            btn.innerText = "Desbloquear e Baixar"; btn.disabled = false;
-        }
-
-        async function renomearLote() {
-            const files = document.getElementById('loteFiles').files;
-            let prefixo = document.getElementById('lotePrefixo').value.trim() || "arquivo";
-            if(files.length === 0) return exibirResultado('resLote', "Selecione arquivos.", "error");
-            const btn = document.getElementById('btnLote'); btn.innerText = "Empacotando..."; btn.disabled = true;
-            try {
-                const zip = new JSZip();
-                for(let i = 0; i < files.length; i++) {
-                    const file = files[i]; const ext = file.name.split('.').pop(); zip.file(`${prefixo}_${i+1}.${ext}`, file);
-                }
-                const content = await zip.generateAsync({type:"blob"});
-                baixarArquivo(content, "Arquivos_Renomeados.zip");
-                exibirResultado('resLote', "✅ ZIP baixado com sucesso!", "success");
-            } catch (err) { exibirResultado('resLote', "Erro ao processar.", "error"); }
-            btn.innerText = "Renomear e Gerar ZIP"; btn.disabled = false;
-        }
-
-        function converterImagem() {
-            const file = document.getElementById('imgFile').files[0]; 
-            const format = document.getElementById('imgFormat').value;
-            if(!file) return alert("Selecione uma imagem!");
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = async function() {
-                    const canvas = document.createElement('canvas'); 
-                    canvas.width = img.width; 
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d'); 
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // NOVA LÓGICA: Se o usuário selecionou PDF
-                    if (format === 'pdf') {
-                        try {
-                            const { PDFDocument } = PDFLib;
-                            const pdf = await PDFDocument.create();
-                            
-                            // Converte primeiro para PNG para garantir que a biblioteca entenda a imagem
-                            const base64 = canvas.toDataURL('image/png').split(',')[1];
-                            const imgBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-                            
-                            // Embutir no PDF
-                            const pngImage = await pdf.embedPng(imgBytes);
-                            
-                            // Cria uma página do exato tamanho da imagem
-                            const page = pdf.addPage([pngImage.width, pngImage.height]);
-                            page.drawImage(pngImage, { x: 0, y: 0, width: pngImage.width, height: pngImage.height });
-                            
-                            const pdfBytes = await pdf.save();
-                            baixarArquivo(new Blob([pdfBytes], {type: "application/pdf"}), "imagem_convertida.pdf");
-                        } catch(err) {
-                            alert("Erro ao converter para PDF.");
-                        }
-                    } 
-                    // Lógica Normal: JPG, PNG, WEBP
-                    else {
-                        const a = document.createElement('a'); 
-                        a.href = canvas.toDataURL(`image/${format}`); 
-                        a.download = `convertida.${format}`; 
-                        a.click();
-                    }
-                }; 
-                img.src = e.target.result;
-            }; 
-            reader.readAsDataURL(file);
-        }
-
-        // --- FINANÇAS ---
-
-        function calcMercado() {
-            const pA = parseFloat(document.getElementById('priceA').value), qA = parseFloat(document.getElementById('qtyA').value);
-            const pB = parseFloat(document.getElementById('priceB').value), qB = parseFloat(document.getElementById('qtyB').value);
-            if (!pA || !qA || !pB || !qB) return exibirResultado('resMercado', "Preencha tudo!", "error");
-            const cA = pA/qA, cB = pB/qB;
-            if(cA < cB) exibirResultado('resMercado', `🏆 <b>A</b> compensa mais! (${(((cB-cA)/cB)*100).toFixed(1)}% mais barato)`, "success");
-            else if(cB < cA) exibirResultado('resMercado', `🏆 <b>B</b> compensa mais! (${(((cA-cB)/cA)*100).toFixed(1)}% mais barato)`, "success");
-            else exibirResultado('resMercado', "⚖️ Ambos iguais!", "info");
-        }
-
-        function calcPorcentagem() {
-            const t = parseFloat(document.getElementById('pctTaxa').value), v = parseFloat(document.getElementById('pctValor').value);
-            if (!t || !v) return exibirResultado('resPct', "Preencha os valores!", "error");
-            exibirResultado('resPct', `${t}% de ${v} é <b>${((t*v)/100).toFixed(2)}</b>`, "success");
-        }
-
-        function calcularDesconto() {
-            const p = parseFloat(document.getElementById('descPreco').value), d = parseFloat(document.getElementById('descPct').value);
-            if (!p || !d) return exibirResultado('resDesconto', "Preencha tudo!", "error");
-            exibirResultado('resDesconto', `Final: <b>R$ ${(p - (p*(d/100))).toFixed(2)}</b><br>Economia: R$ ${(p*(d/100)).toFixed(2)}`, "success");
-        }
-
-        function calcularJuros() {
-            const c = parseFloat(document.getElementById('jcValor').value);
-            const i = parseFloat(document.getElementById('jcTaxa').value) / 100;
-            const t = parseFloat(document.getElementById('jcMeses').value);
-            if(isNaN(c) || isNaN(i) || isNaN(t)) return exibirResultado('resJuros', "Preencha todos os campos!", "error");
-            const m = c * Math.pow((1 + i), t);
-            const juros = m - c;
-            exibirResultado('resJuros', `Total Acumulado: <b>R$ ${m.toFixed(2)}</b><br>Apenas Juros: R$ ${juros.toFixed(2)}`, "success");
-        }
-
-        function dividirConta() {
-            const tot = parseFloat(document.getElementById('contaTotal').value), g = parseFloat(document.getElementById('contaGorjeta').value||0), p = parseInt(document.getElementById('contaPessoas').value);
-            if (!tot||!p) return exibirResultado('resConta', "Erro!", "error");
-            const final = tot + (tot*(g/100)); exibirResultado('resConta', `Total: R$ ${final.toFixed(2)}<br>Pessoa: <b>R$ ${(final/p).toFixed(2)}</b>`, "success");
-        }
-
-        function calcCombustivel() {
-            const a = parseFloat(document.getElementById('precoAlcool').value), g = parseFloat(document.getElementById('precoGasolina').value);
-            if (!a||!g) return exibirResultado('resCombustivel', "Preencha!", "error");
-            (a/g < 0.7) ? exibirResultado('resCombustivel', "Abasteça com <b>Álcool</b>!", "success") : exibirResultado('resCombustivel', "Abasteça com <b>Gasolina</b>!", "info");
-        }
-
-        // --- TEXTOS ---
-
-        function contarTexto() {
-            const txt = document.getElementById('txtContador').value;
-            document.getElementById('resCaracteres').innerText = txt.length; document.getElementById('resPalavras').innerText = txt.trim()?txt.trim().split(/\s+/).length:0;
-        }
-
-        function formatarTexto(tipo) {
-            const el = document.getElementById('txtFormata');
-            if(tipo==='upper') el.value = el.value.toUpperCase();
-            if(tipo==='lower') el.value = el.value.toLowerCase();
-            if(tipo==='cap') el.value = el.value.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, l=>l.toUpperCase());
-        }
-
-        function inverterTexto() {
-            document.getElementById('resInvertido').value = document.getElementById('txtInverter').value.split('').reverse().join('');
-        }
-
-        function lerTexto() {
-            const txt = document.getElementById('txtLeitor').value;
-            if(!txt) return alert("Digite algo para ler!");
-            if('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const msg = new SpeechSynthesisUtterance(txt); msg.lang = 'pt-BR';
-                window.speechSynthesis.speak(msg);
-            } else { alert("Navegador não suporta leitura em áudio."); }
-        }
-
-        function gerarLorem() {
-            const qtd = parseInt(document.getElementById('loremQtd').value) || 1;
-            const p = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-            let res = ""; for(let i=0; i<qtd; i++) res += p + "\n\n";
-            document.getElementById('resLorem').value = res.trim();
-        }
-
-        function sortearNome() {
-            const n = document.getElementById('listaNomes').value.trim().split('\n').filter(x=>x.trim()!=='');
-            if(n.length===0) return exibirResultado('resSorteioNome', "Cole nomes!", "error");
-            exibirResultado('resSorteioNome', `🎉 <b>${n[Math.floor(Math.random()*n.length)]}</b>`, "success");
-        }
-
-        // --- ÚTEIS ---
-
-        function calcRegraTres() {
-            const a=parseFloat(document.getElementById('r3A').value), b=parseFloat(document.getElementById('r3B').value), c=parseFloat(document.getElementById('r3C').value);
-            if(!a||!b||!c) return exibirResultado('resR3', "Erro!", "error");
-            exibirResultado('resR3', `X = <b>${((b*c)/a).toFixed(2)}</b>`, "success");
-        }
-
-        function calcularDiferencaDatas() {
-            const d1=new Date(document.getElementById('dataIni').value), d2=new Date(document.getElementById('dataFim').value);
-            if(isNaN(d1)||isNaN(d2)) return exibirResultado('resDatas', "Selecione!", "error");
-            exibirResultado('resDatas', `Diferença: <b>${Math.ceil(Math.abs(d2-d1)/(1000*60*60*24))} dias</b>.`, "success");
-        }
-
-        function gerarSenha() {
-            const s=document.getElementById('senhaSize').value, c="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
-            document.getElementById('senhaResult').value = Array.from({length:s}).map(()=>c.charAt(Math.floor(Math.random()*c.length))).join('');
-        }
-        function copiarValor(id) { document.getElementById(id).select(); document.execCommand("copy"); alert("Copiado!"); }
-
-        function randomHex() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0').toUpperCase(); }
-        function gerarCor() {
-            for(let i=1; i<=3; i++) {
-                let cor = randomHex(); let box = document.getElementById('corBox'+i); box.style.backgroundColor = cor; box.innerText = cor;
-            }
-        }
-
-        function gerarLinkZap() {
-            const num = document.getElementById('zapNum').value.replace(/\D/g,''); if(!num) return alert("Erro");
-            document.getElementById('zapResult').value = `https://wa.me/55${num}?text=${encodeURIComponent(document.getElementById('zapMsg').value)}`;
-        }
-
-        function gerarQr() {
-            const t = document.getElementById('qrTexto').value; if(!t) return;
-            document.getElementById('imgQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(t)}`;
-            document.getElementById('resQr').style.display="block";
-        }
-
-        // --- SORTEIOS E JOGOS ---
-
-        function sortearNumero() {
-            const min=Math.ceil(document.getElementById('sortMin').value), max=Math.floor(document.getElementById('sortMax').value);
-            exibirResultado('resSorteio', Math.floor(Math.random()*(max-min+1))+min, "success");
-        }
-
-        function jogarDado() {
-            const nLados = parseInt(document.getElementById('tipoDado').value);
-            exibirResultado('resDado', `🎲 <b>${Math.floor(Math.random() * nLados) + 1}</b>`, "success");
-        }
-
-        function jogarMoeda() {
-            const img = document.getElementById('moedaImg'), resBox = document.getElementById('resMoeda');
-            img.classList.add('spin-anim'); resBox.innerHTML = "Girando a moeda..."; resBox.className = "result-box show info";
-            setTimeout(() => {
-                img.classList.remove('spin-anim');
-                exibirResultado('resMoeda', Math.random() < 0.5 ? "Caiu: <b>CARA</b>" : "Caiu: <b>COROA</b>", "success");
-            }, 800);
-        }
-
-        // --- SAÚDE E MEDIDAS ---
-
-        function calcImc() {
-            const p=parseFloat(document.getElementById('imcPeso').value), a=parseFloat(document.getElementById('imcAlt').value)/100;
-            if(!p||!a) return exibirResultado('resImc',"Erro!","error");
-            const imc=(p/(a*a)).toFixed(1); exibirResultado('resImc', `IMC: <b>${imc}</b>`, "info");
-        }
-
-        let tc=0, ic;
-        function formatarTempo(t){ return `${Math.floor(t/60).toString().padStart(2,'0')}:${(t%60).toString().padStart(2,'0')}`; }
-        function iniciarCron(){ clearInterval(ic); ic=setInterval(()=>{ tc++; document.getElementById('displayCron').innerText=formatarTempo(tc);},1000); }
-        function pararCron(){ clearInterval(ic); }
-        function resetarCron(){ pararCron(); tc=0; document.getElementById('displayCron').innerText="00:00"; }
-        
-        function converterTemp(){ document.getElementById('tempF').value=((parseFloat(document.getElementById('tempC').value)*9/5)+32).toFixed(2); }
-
-        // Inicializadores
-        gerarSenha(); gerarCor();
-    </script>
-</body>
-</html>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -397,7 +74,6 @@
             overflow-y: auto;
             z-index: 1000;
         }
-
         .sidebar::-webkit-scrollbar { width: 6px; }
         .sidebar::-webkit-scrollbar-thumb { background: #34495e; border-radius: 4px; }
 
@@ -405,7 +81,7 @@
         .sidebar-header h2 { margin: 0; font-size: 22px; text-align: center; width: 100%; }
         .close-sidebar { display: none; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; }
 
-        /* Estilos do Menu Sanfona (Accordion) */
+        /* Estilos do Menu Sanfona */
         .category-btn {
             background: rgba(0,0,0,0.15); border: none; color: #bdc3c7; width: 100%;
             text-align: left; padding: 15px 20px; font-size: 12px; text-transform: uppercase;
@@ -414,7 +90,6 @@
         }
         .category-btn:hover { color: #fff; background: rgba(0,0,0,0.25); }
         .category-btn.open { color: #fff; font-weight: bold; border-left: 3px solid var(--primary); }
-        
         .arrow { font-size: 10px; transition: transform 0.3s; }
         .category-btn.open .arrow { transform: rotate(180deg); }
 
@@ -440,13 +115,11 @@
         /* Área de Conteúdo Principal */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .main-content { flex: 1; overflow-y: auto; padding-bottom: 30px; }
-        
         .ad-banner { background: var(--card-bg); text-align: center; padding: 10px; margin: 20px; border-radius: 8px; min-height: 90px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--input-border); }
 
         .tab-content { display: none; padding: 20px; animation: fadeIn 0.4s ease-in-out; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         @keyframes spinMoeda { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
         .spin-anim { animation: spinMoeda 0.4s linear infinite; }
 
@@ -472,7 +145,7 @@
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
 
-        /* Substituições de Cores das Caixas de Resultado no Modo Escuro */
+        /* Cores no Modo Escuro */
         .dark-theme .success { background-color: #1e4620; color: #a3d9a5; border-color: #285b2a; }
         .dark-theme .error { background-color: #4a191e; color: #f5b0b7; border-color: #5c2026; }
         .dark-theme .info { background-color: #383d41; color: #e2e3e5; border-color: #454b50; }
@@ -577,6 +250,298 @@
         </div>
     </div>
 
+<div class="main-wrapper">
+        <div class="main-content">
+            
+            <div class="ad-banner">
+                <ins class="adsbygoogle"
+                     style="display:block; width:100%;"
+                     data-ad-client="ca-pub-4339228294306314"
+                     data-ad-slot="5606367275"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <div id="calculadora" class="tab-content active">
+                <div class="tool-card">
+                    <h3>Calculadora</h3>
+                    <div class="calc-display" id="calcDisplay">0</div>
+                    
+                    <div class="calc-grid sci" id="sciButtons">
+                        <button class="calc-btn" onclick="appendCalc('sin(')">sin</button>
+                        <button class="calc-btn" onclick="appendCalc('cos(')">cos</button>
+                        <button class="calc-btn" onclick="appendCalc('tan(')">tan</button>
+                        <button class="calc-btn" onclick="appendCalc('log(')">log</button>
+                        <button class="calc-btn" onclick="appendCalc('sqrt(')">√</button>
+                        <button class="calc-btn" onclick="appendCalc('^')">^</button>
+                        <button class="calc-btn" onclick="appendCalc('π')">π</button>
+                        <button class="calc-btn" onclick="appendCalc('e')">e</button>
+                        <button class="calc-btn" onclick="appendCalc('(')">(</button>
+                        <button class="calc-btn" onclick="appendCalc(')')">)</button>
+                    </div>
+
+                    <div class="calc-grid">
+                        <button class="calc-btn danger" onclick="clearCalc()">C</button>
+                        <button class="calc-btn action" onclick="appendCalc('/')">÷</button>
+                        <button class="calc-btn action" onclick="appendCalc('*')">×</button>
+                        <button class="calc-btn action" onclick="appendCalc('-')">-</button>
+                        
+                        <button class="calc-btn" onclick="appendCalc('7')">7</button>
+                        <button class="calc-btn" onclick="appendCalc('8')">8</button>
+                        <button class="calc-btn" onclick="appendCalc('9')">9</button>
+                        <button class="calc-btn action" onclick="appendCalc('+')" style="grid-row: span 2;">+</button>
+                        
+                        <button class="calc-btn" onclick="appendCalc('4')">4</button>
+                        <button class="calc-btn" onclick="appendCalc('5')">5</button>
+                        <button class="calc-btn" onclick="appendCalc('6')">6</button>
+                        
+                        <button class="calc-btn" onclick="appendCalc('1')">1</button>
+                        <button class="calc-btn" onclick="appendCalc('2')">2</button>
+                        <button class="calc-btn" onclick="appendCalc('3')">3</button>
+                        <button class="calc-btn action" onclick="calculate()" style="grid-row: span 2; background: #28a745;">=</button>
+                        
+                        <button class="calc-btn" onclick="appendCalc('0')" style="grid-column: span 2;">0</button>
+                        <button class="calc-btn" onclick="appendCalc('.')">.</button>
+                    </div>
+                    <button class="action-btn" id="btnToggleSci" onclick="toggleSci()" style="margin-top: 15px; background: #6c757d;">Modo Científico</button>
+                </div>
+            </div>
+
+            <div id="calcMercado" class="tab-content">
+                <div class="tool-card">
+                    <h3>Qual produto compensa mais?</h3>
+                    <div class="form-group"><label>Produto A (R$ e Qtd):</label><input type="number" id="priceA" placeholder="Preço (Ex: 5.50)"><input type="number" id="qtyA" placeholder="Qtd" style="margin-top:5px;"></div>
+                    <div class="form-group"><label>Produto B (R$ e Qtd):</label><input type="number" id="priceB" placeholder="Preço (Ex: 3.20)"><input type="number" id="qtyB" placeholder="Qtd" style="margin-top:5px;"></div>
+                    <button class="action-btn" onclick="calcMercado()">Comparar</button>
+                    <div id="resMercado" class="result-box"></div>
+                </div>
+            </div>
+            <div id="calcPorcentagem" class="tab-content">
+                <div class="tool-card"><h3>Porcentagem</h3>
+                    <div class="form-group"><label>Qual é a %?</label><input type="number" id="pctTaxa" placeholder="Ex: 15"></div>
+                    <div class="form-group"><label>Do valor total:</label><input type="number" id="pctValor" placeholder="Ex: 250"></div>
+                    <button class="action-btn" onclick="calcPorcentagem()">Calcular</button><div id="resPct" class="result-box"></div>
+                </div>
+            </div>
+            <div id="calcDesconto" class="tab-content">
+                <div class="tool-card"><h3>Calculadora de Desconto</h3>
+                    <div class="form-group"><label>Preço Original (R$):</label><input type="number" id="descPreco" placeholder="Ex: 150.00"></div>
+                    <div class="form-group"><label>Desconto (%):</label><input type="number" id="descPct" placeholder="Ex: 20"></div>
+                    <button class="action-btn" onclick="calcularDesconto()">Ver Preço Final</button><div id="resDesconto" class="result-box"></div>
+                </div>
+            </div>
+            <div id="calcJuros" class="tab-content">
+                <div class="tool-card"><h3>Juros Compostos</h3>
+                    <div class="form-group"><label>Valor Inicial (R$):</label><input type="number" id="jcValor" placeholder="Ex: 1000"></div>
+                    <div class="form-group"><label>Taxa de Juros (% ao mês):</label><input type="number" id="jcTaxa" placeholder="Ex: 1.5"></div>
+                    <div class="form-group"><label>Período (Meses):</label><input type="number" id="jcMeses" placeholder="Ex: 12"></div>
+                    <button class="action-btn" onclick="calcularJuros()">Calcular Rendimento</button>
+                    <div id="resJuros" class="result-box"></div>
+                </div>
+            </div>
+            <div id="dividirConta" class="tab-content">
+                <div class="tool-card"><h3>Dividir a Conta</h3>
+                    <div class="form-group"><label>Total da Conta (R$):</label><input type="number" id="contaTotal"></div>
+                    <div class="form-group"><label>Gorjeta (%):</label><input type="number" id="contaGorjeta" value="10"></div>
+                    <div class="form-group"><label>Quantas pessoas?</label><input type="number" id="contaPessoas" value="2"></div>
+                    <button class="action-btn" onclick="dividirConta()">Calcular Divisão</button><div id="resConta" class="result-box"></div>
+                </div>
+            </div>
+            <div id="alcoolGasolina" class="tab-content">
+                <div class="tool-card"><h3>Álcool ou Gasolina?</h3>
+                    <div class="form-group"><label>Álcool (R$):</label><input type="number" id="precoAlcool"></div>
+                    <div class="form-group"><label>Gasolina (R$):</label><input type="number" id="precoGasolina"></div>
+                    <button class="action-btn" onclick="calcCombustivel()">Verificar Melhor Opção</button><div id="resCombustivel" class="result-box"></div>
+                </div>
+            </div>
+
+            <div id="juntarPdf" class="tab-content">
+                <div class="tool-card">
+                    <h3>Juntar Arquivos PDF</h3>
+                    <p style="font-size:13px; color:#666;">O processamento é feito localmente.</p>
+                    <div class="form-group"><label>Selecione 2 ou mais PDFs:</label><input type="file" id="pdfFiles" accept="application/pdf" multiple></div>
+                    <button class="action-btn" id="btnPdf" onclick="juntarPdfs()">Juntar e Baixar PDF</button>
+                    <div id="resPdf" class="result-box"></div>
+                </div>
+            </div>
+            <div id="desbloquearPdf" class="tab-content">
+                <div class="tool-card">
+                    <h3>Desbloquear PDF</h3>
+                    <p style="font-size:13px; color:#666;">Remove bloqueios de edição e cópia.</p>
+                    <div class="form-group"><label>Selecione o PDF bloqueado:</label><input type="file" id="pdfBloqueado" accept="application/pdf"></div>
+                    <button class="action-btn" id="btnDesbloquear" onclick="desbloquearPdf()">Desbloquear e Baixar</button>
+                    <div id="resDesbloqueio" class="result-box"></div>
+                </div>
+            </div>
+            <div id="renomearLote" class="tab-content">
+                <div class="tool-card">
+                    <h3>Renomear Arquivos em Lote</h3>
+                    <p style="font-size:13px; color:#666;">Serão baixados em um arquivo .zip.</p>
+                    <div class="form-group"><label>Selecione os arquivos:</label><input type="file" id="loteFiles" multiple></div>
+                    <div class="form-group"><label>Prefixo do novo nome (Ex: foto):</label><input type="text" id="lotePrefixo" placeholder="arquivo"></div>
+                    <button class="action-btn" id="btnLote" onclick="renomearLote()">Renomear e Gerar ZIP</button>
+                    <div id="resLote" class="result-box"></div>
+                </div>
+            </div>
+            <div id="converterImagem" class="tab-content">
+                <div class="tool-card">
+                    <h3>Conversor de Imagens</h3>
+                    <div class="form-group"><label>Selecione uma imagem:</label><input type="file" id="imgFile" accept="image/png, image/jpeg, image/webp"></div>
+                    <div class="form-group"><label>Converter para:</label>
+                        <select id="imgFormat">
+                            <option value="jpeg">JPG / JPEG</option>
+                            <option value="png">PNG (Fundo Transparente)</option>
+                            <option value="webp">WEBP (Leve)</option>
+                            <option value="pdf">PDF (Documento)</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" onclick="converterImagem()">Converter e Baixar</button>
+                </div>
+            </div>
+
+            <div id="contadorTexto" class="tab-content">
+                <div class="tool-card"><h3>Contador de Texto</h3>
+                    <div class="form-group"><textarea id="txtContador" oninput="contarTexto()"></textarea></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <div>Palavras: <span id="resPalavras" style="color:var(--primary);">0</span></div>
+                        <div>Caracteres: <span id="resCaracteres" style="color:var(--primary);">0</span></div>
+                    </div>
+                </div>
+            </div>
+            <div id="formataTexto" class="tab-content">
+                <div class="tool-card"><h3>Maiúsculas e Minúsculas</h3>
+                    <div class="form-group"><textarea id="txtFormata"></textarea></div>
+                    <div class="btn-group"><button class="action-btn" onclick="formatarTexto('upper')">MAIÚSC.</button><button class="action-btn" onclick="formatarTexto('lower')">minúsc.</button></div>
+                    <button class="action-btn" onclick="formatarTexto('cap')" style="margin-top:10px;">Capitalizar Primeira Letra</button>
+                </div>
+            </div>
+            <div id="textoInvertido" class="tab-content">
+                <div class="tool-card"><h3>Texto ao Contrário</h3>
+                    <div class="form-group"><label>Digite aqui:</label><textarea id="txtInverter" oninput="inverterTexto()"></textarea></div>
+                    <div class="form-group"><label>Resultado Invertido:</label><textarea id="resInvertido" readonly style="background:var(--input-bg);"></textarea></div>
+                </div>
+            </div>
+            <div id="leitorTexto" class="tab-content">
+                <div class="tool-card"><h3>Leitor de Texto em Áudio</h3>
+                    <div class="form-group"><textarea id="txtLeitor" placeholder="Cole o texto aqui..."></textarea></div>
+                    <button class="action-btn" onclick="lerTexto()">Ouvir Texto 🗣️</button>
+                </div>
+            </div>
+            <div id="loremIpsum" class="tab-content">
+                <div class="tool-card"><h3>Gerador de Lorem Ipsum</h3>
+                    <div class="form-group"><label>Parágrafos:</label><input type="number" id="loremQtd" value="3" min="1" max="10"></div>
+                    <button class="action-btn" onclick="gerarLorem()">Gerar Texto</button>
+                    <div class="form-group" style="margin-top:15px;"><textarea id="resLorem" readonly style="height:150px; background:var(--input-bg);"></textarea></div>
+                    <button class="action-btn" style="background:#28a745;" onclick="copiarValor('resLorem')">Copiar Texto</button>
+                </div>
+            </div>
+            <div id="sorteioNomes" class="tab-content">
+                <div class="tool-card"><h3>Sorteador de Nomes</h3>
+                    <div class="form-group"><label>Nomes (um por linha):</label><textarea id="listaNomes"></textarea></div>
+                    <button class="action-btn" onclick="sortearNome()">Sortear Nome</button><div id="resSorteioNome" class="result-box" style="font-size:24px;"></div>
+                </div>
+            </div>
+
+            <div id="regraTres" class="tab-content">
+                <div class="tool-card"><h3>Regra de 3 Simples</h3>
+                    <div style="display:flex; gap:10px;"><div class="form-group"><label>A:</label><input type="number" id="r3A"></div><div class="form-group"><label>B:</label><input type="number" id="r3B"></div></div>
+                    <div style="display:flex; gap:10px;"><div class="form-group"><label>C:</label><input type="number" id="r3C"></div><div class="form-group"><label>X:</label><input type="text" value="?" disabled></div></div>
+                    <button class="action-btn" onclick="calcRegraTres()">Descobrir X</button><div id="resR3" class="result-box"></div>
+                </div>
+            </div>
+            <div id="calcDatas" class="tab-content">
+                <div class="tool-card"><h3>Diferença de Datas</h3>
+                    <div class="form-group"><label>Data Inicial:</label><input type="date" id="dataIni"></div><div class="form-group"><label>Data Final:</label><input type="date" id="dataFim"></div>
+                    <button class="action-btn" onclick="calcularDiferencaDatas()">Calcular</button><div id="resDatas" class="result-box"></div>
+                </div>
+            </div>
+            <div id="geradorSenha" class="tab-content">
+                <div class="tool-card"><h3>Gerador de Senha</h3>
+                    <div class="form-group"><label>Tamanho:</label><input type="number" id="senhaSize" value="12"></div>
+                    <button class="action-btn" onclick="gerarSenha()">Gerar</button><input type="text" id="senhaResult" readonly style="margin-top:15px;text-align:center;font-size:20px;">
+                    <button class="action-btn" style="background:#28a745;" onclick="copiarValor('senhaResult')">Copiar</button>
+                </div>
+            </div>
+            <div id="geradorCores" class="tab-content">
+                <div class="tool-card"><h3>Gerador de Cores HEX</h3>
+                    <button class="action-btn" onclick="gerarCor()">Gerar Nova Cor</button>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <div id="corBox1" style="flex:1; height:80px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff; text-shadow:1px 1px 3px rgba(0,0,0,0.8);">#000000</div>
+                        <div id="corBox2" style="flex:1; height:80px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff; text-shadow:1px 1px 3px rgba(0,0,0,0.8);">#000000</div>
+                        <div id="corBox3" style="flex:1; height:80px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#fff; text-shadow:1px 1px 3px rgba(0,0,0,0.8);">#000000</div>
+                    </div>
+                </div>
+            </div>
+            <div id="linkZap" class="tab-content">
+                <div class="tool-card"><h3>Link de WhatsApp</h3>
+                    <div class="form-group"><label>Número + DDD:</label><input type="number" id="zapNum"></div>
+                    <div class="form-group"><label>Mensagem:</label><input type="text" id="zapMsg"></div>
+                    <button class="action-btn" onclick="gerarLinkZap()">Gerar Link</button><input type="text" id="zapResult" readonly style="margin-top:15px;">
+                </div>
+            </div>
+            <div id="qrCode" class="tab-content">
+                <div class="tool-card"><h3>QR Code</h3>
+                    <div class="form-group"><label>Link/Texto:</label><input type="text" id="qrTexto"></div>
+                    <button class="action-btn" onclick="gerarQr()">Criar QR</button>
+                    <div id="resQr" style="text-align:center; margin-top:20px; display:none;"><img id="imgQr" src="" style="border-radius:8px;"></div>
+                </div>
+            </div>
+
+            <div id="sorteio" class="tab-content">
+                <div class="tool-card"><h3>Sorteador Numérico</h3>
+                    <div style="display:flex; gap:10px;"><div class="form-group"><label>Min:</label><input type="number" id="sortMin" value="1"></div><div class="form-group"><label>Max:</label><input type="number" id="sortMax" value="100"></div></div>
+                    <button class="action-btn" onclick="sortearNumero()">Sortear</button><div id="resSorteio" class="result-box" style="font-size:30px;"></div>
+                </div>
+            </div>
+            <div id="rolarDados" class="tab-content">
+                <div class="tool-card"><h3>Rolador de Dados</h3>
+                    <div class="form-group"><label>Escolha o Dado:</label>
+                        <select id="tipoDado">
+                            <option value="4">D4 (4 Lados)</option>
+                            <option value="6" selected>D6 (6 Lados - Comum)</option>
+                            <option value="12">D12 (12 Lados)</option>
+                            <option value="20">D20 (20 Lados - RPG)</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" onclick="jogarDado()">Rolar Dado</button>
+                    <div id="resDado" class="result-box" style="font-size:40px; border:2px dashed var(--primary);"></div>
+                </div>
+            </div>
+            <div id="caraCoroa" class="tab-content">
+                <div class="tool-card"><h3>Cara ou Coroa</h3>
+                    <div style="text-align:center; margin:20px 0;">
+                        <img id="moedaImg" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1fa99.svg" style="width: 80px; height: 80px; border-radius: 50%; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.1));" alt="Moeda">
+                    </div>
+                    <button class="action-btn" onclick="jogarMoeda()">Jogar a Moeda</button>
+                    <div id="resMoeda" class="result-box" style="font-size:24px;"></div>
+                </div>
+            </div>
+
+            <div id="calcImc" class="tab-content">
+                <div class="tool-card"><h3>Calculadora IMC</h3>
+                    <div class="form-group"><label>Peso (kg):</label><input type="number" id="imcPeso"></div><div class="form-group"><label>Altura (cm):</label><input type="number" id="imcAlt"></div>
+                    <button class="action-btn" onclick="calcImc()">Calcular IMC</button><div id="resImc" class="result-box"></div>
+                </div>
+            </div>
+            <div id="cronometro" class="tab-content">
+                <div class="tool-card"><h3>Cronômetro</h3>
+                    <div id="displayCron" style="font-size:48px; text-align:center; font-weight:bold;">00:00</div>
+                    <div class="btn-group"><button class="action-btn" style="background:#28a745;" onclick="iniciarCron()">Iniciar</button><button class="action-btn" style="background:#dc3545;" onclick="pararCron()">Parar</button><button class="action-btn" style="background:#6c757d;" onclick="resetarCron()">Zerar</button></div>
+                </div>
+            </div>
+            <div id="conversorTemp" class="tab-content">
+                <div class="tool-card"><h3>Temperatura</h3>
+                    <div class="form-group"><label>Celsius (°C):</label><input type="number" id="tempC" oninput="converterTemp()"></div>
+                    <div class="form-group"><label>Fahrenheit (°F):</label><input type="number" id="tempF" readonly style="background:var(--input-bg);"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
 <script>
         // --- FUNÇÕES DE LAYOUT E MODO ESCURO ---
         function toggleSidebar() {
@@ -610,7 +575,7 @@
             localStorage.setItem('dlutils_darkmode', isDark);
         }
 
-        // Carrega a preferência salva ao abrir a página
+        // Carrega a preferência do modo escuro
         if(localStorage.getItem('dlutils_darkmode') === 'true') {
             document.body.classList.add('dark-theme');
         }
@@ -634,25 +599,34 @@
             disp.innerText += val;
         }
         function clearCalc() { document.getElementById('calcDisplay').innerText = '0'; }
+        
         function calculate() {
             let expr = document.getElementById('calcDisplay').innerText;
             try {
-                // Prepara a expressão científica para o avaliador do JS
-                let evalExpr = expr.replace(/sin/g, 'Math.sin')
-                                   .replace(/cos/g, 'Math.cos')
-                                   .replace(/tan/g, 'Math.tan')
-                                   .replace(/log/g, 'Math.log10')
-                                   .replace(/sqrt/g, 'Math.sqrt')
+                // Converte de graus para radianos e faz a conta
+                let evalExpr = expr.replace(/sin\(/g, 'Math.sin((Math.PI/180)*')
+                                   .replace(/cos\(/g, 'Math.cos((Math.PI/180)*')
+                                   .replace(/tan\(/g, 'Math.tan((Math.PI/180)*')
+                                   .replace(/log\(/g, 'Math.log10(')
+                                   .replace(/sqrt\(/g, 'Math.sqrt(')
                                    .replace(/\^/g, '**')
                                    .replace(/π/g, 'Math.PI')
                                    .replace(/e/g, 'Math.E');
+                
                 let res = eval(evalExpr);
-                if(res % 1 !== 0) res = res.toFixed(6).replace(/\.?0+$/, ''); // Formata decimais
+                
+                // Arredonda pequenos erros de ponto flutuante (ex: cos(90) dando 6.12e-17)
+                if (Math.abs(res) < 1e-10) res = 0;
+                
+                // Limpa decimais gigantes
+                if(res % 1 !== 0) res = parseFloat(res.toFixed(6)); 
+                
                 document.getElementById('calcDisplay').innerText = res;
             } catch (e) {
                 document.getElementById('calcDisplay').innerText = 'Erro';
             }
         }
+        
         function toggleSci() {
             isSci = !isSci;
             document.getElementById('sciButtons').style.display = isSci ? 'grid' : 'none';
